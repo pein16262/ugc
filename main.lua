@@ -1,107 +1,90 @@
--- Fly GUI + Script with Basic Anti-Cheat Bypass
-local Players = game:GetService("Players")
-local UIS = game:GetService("UserInputService")
-local LocalPlayer = Players.LocalPlayer
-local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-local HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
+-- Initialize the GUI
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+ScreenGui.Name = "FlyAndNoclipGui"
 
--- Anti-Cheat Bypass: Disconnect basic state detectors
-for _, conn in ipairs(getconnections(Character.Humanoid.StateChanged)) do
-    conn:Disable()
-end
+local Frame = Instance.new("Frame")
+Frame.Parent = ScreenGui
+Frame.Size = UDim2.new(0, 200, 0, 150)
+Frame.Position = UDim2.new(0, 10, 0, 10)
+Frame.BackgroundColor3 = Color3.new(0.1, 0.1, 0.1)
 
--- GUI
-local gui = Instance.new("ScreenGui", LocalPlayer:WaitForChild("PlayerGui"))
-gui.Name = "FlyBypassGUI"
+local FlyButton = Instance.new("TextButton")
+FlyButton.Parent = Frame
+FlyButton.Size = UDim2.new(0, 180, 0, 40)
+FlyButton.Position = UDim2.new(0, 10, 0, 10)
+FlyButton.Text = "Enable Fly"
+FlyButton.TextColor3 = Color3.new(1, 1, 1)
+FlyButton.BackgroundColor3 = Color3.new(0, 0, 1)
 
-local frame = Instance.new("Frame", gui)
-frame.Size = UDim2.new(0, 160, 0, 100)
-frame.Position = UDim2.new(0, 10, 0.4, 0)
-frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-frame.BorderSizePixel = 0
+local NoclipButton = Instance.new("TextButton")
+NoclipButton.Parent = Frame
+NoclipButton.Size = UDim2.new(0, 180, 0, 40)
+NoclipButton.Position = UDim2.new(0, 10, 0, 60)
+NoclipButton.Text = "Enable Noclip"
+NoclipButton.TextColor3 = Color3.new(1, 1, 1)
+NoclipButton.BackgroundColor3 = Color3.new(0, 1, 0)
 
-local toggle = Instance.new("TextButton", frame)
-toggle.Size = UDim2.new(0.8, 0, 0.4, 0)
-toggle.Position = UDim2.new(0.1, 0, 0.1, 0)
-toggle.Text = "Fly: OFF"
-toggle.TextColor3 = Color3.new(1, 1, 1)
-toggle.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-toggle.Font = Enum.Font.GothamBold
-toggle.TextScaled = true
+local TeleportButton = Instance.new("TextButton")
+TeleportButton.Parent = Frame
+TeleportButton.Size = UDim2.new(0, 180, 0, 40)
+TeleportButton.Position = UDim2.new(0, 10, 0, 110)
+TeleportButton.Text = "Teleport to (-339.12, 10, 553.27)"
+TeleportButton.TextColor3 = Color3.new(1, 1, 1)
+TeleportButton.BackgroundColor3 = Color3.new(1, 0, 0)
 
-local plus = Instance.new("TextButton", frame)
-plus.Size = UDim2.new(0.35, 0, 0.3, 0)
-plus.Position = UDim2.new(0.55, 0, 0.6, 0)
-plus.Text = "+"
-plus.TextColor3 = Color3.new(1, 1, 1)
-plus.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-plus.Font = Enum.Font.GothamBold
-plus.TextScaled = true
-
-local minus = Instance.new("TextButton", frame)
-minus.Size = UDim2.new(0.35, 0, 0.3, 0)
-minus.Position = UDim2.new(0.1, 0, 0.6, 0)
-minus.Text = "-"
-minus.TextColor3 = Color3.new(1, 1, 1)
-minus.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-minus.Font = Enum.Font.GothamBold
-minus.TextScaled = true
-
--- Flying logic
+-- Fly and Noclip Functions
 local flying = false
-local velocity
-local gyro
+local noclipping = false
+local bodyVelocity = Instance.new("BodyVelocity")
+local player = game.Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoidRootPart = character:WaitForChild("HumanoidRootPart", 5)
+local humanoid = character:WaitForChild("Humanoid", 5)
 
-local function startFly()
-    velocity = Instance.new("BodyVelocity")
-    velocity.MaxForce = Vector3.new(1e6, 1e6, 1e6)
-    velocity.Velocity = Vector3.zero
-    velocity.P = 1250
-    velocity.Parent = HumanoidRootPart
-
-    gyro = Instance.new("BodyGyro")
-    gyro.MaxTorque = Vector3.new(1e6, 1e6, 1e6)
-    gyro.CFrame = HumanoidRootPart.CFrame
-    gyro.P = 3000
-    gyro.Parent = HumanoidRootPart
-
-    task.spawn(function()
-        while flying and Character and Character.Parent do
-            local cam = workspace.CurrentCamera
-            local direction = Vector3.zero
-            if UIS:IsKeyDown(Enum.KeyCode.W) then direction += cam.CFrame.LookVector end
-            if UIS:IsKeyDown(Enum.KeyCode.S) then direction -= cam.CFrame.LookVector end
-            if UIS:IsKeyDown(Enum.KeyCode.A) then direction -= cam.CFrame.RightVector end
-            if UIS:IsKeyDown(Enum.KeyCode.D) then direction += cam.CFrame.RightVector end
-            if UIS:IsKeyDown(Enum.KeyCode.Space) then direction += Vector3.new(0, 1, 0) end
-            if UIS:IsKeyDown(Enum.KeyCode.LeftShift) then direction -= Vector3.new(0, 1, 0) end
-
-            velocity.Velocity = direction.Unit * 60
-            gyro.CFrame = cam.CFrame
-            task.wait()
-        end
-    end)
+if not humanoidRootPart or not humanoid then
+    warn("Humanoid or HumanoidRootPart not found!")
+    return
 end
 
-local function stopFly()
-    if velocity then velocity:Destroy() end
-    if gyro then gyro:Destroy() end
-end
-
-toggle.MouseButton1Click:Connect(function()
-    flying = not flying
-    toggle.Text = "Fly: " .. (flying and "ON" or "OFF")
+local function toggleFly()
     if flying then
-        startFly()
+        flying = false
+        bodyVelocity:Destroy()
+        humanoid.PlatformStand = false
+        FlyButton.Text = "Enable Fly"
     else
-        stopFly()
+        flying = true
+        bodyVelocity.MaxForce = Vector3.new(400000, 400000, 400000)
+        bodyVelocity.Velocity = Vector3.new(0, 0, 0)
+        bodyVelocity.Parent = humanoidRootPart
+        FlyButton.Text = "Disable Fly"
     end
-end)
+end
 
-plus.MouseButton1Click:Connect(function()
-    frame.Size = frame.Size + UDim2.new(0, 20, 0, 20)
-end)
+local function toggleNoclip()
+    noclipping = not noclipping
+    NoclipButton.Text = noclipping and "Disable Noclip" or "Enable Noclip"
+end
 
-minus.MouseButton1Click:Connect(function()
-    frame.Size = frame.Size - UDim2.new(0, 20, 0, 20)
-end)
+local function teleportToTarget()
+    humanoidRootPart.CFrame = CFrame.new(-339.12, 10, 553.27)
+end
+
+-- Button Connections
+FlyButton.MouseButton1Click:Connect(toggleFly)
+NoclipButton.MouseButton1Click:Connect(toggleNoclip)
+TeleportButton.MouseButton1Click:Connect(teleportToTarget)
+
+-- Noclip Update
+game:GetService("RunService").Heartbeat:Connect(function()
+    if noclipping then
+        for _, part in pairs(character:GetChildren()) do
+            if part:IsA("BasePart") then
+                part.CanCollide = false
+            end
+        end
+    else
+        for _, part in pairs(character:GetChildren()) do
+            if part:IsA("BasePart") then
+                part.CanCollide = true
